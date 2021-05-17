@@ -41,21 +41,37 @@ file(GLOB_RECURSE MATH_LIB_SRC
 )
 
 ##--------------------- Build target ---------------------------------------##
-# Build math lib
-add_library(math STATIC ${MATH_LIB_SRC})
+option(USE_IMPORTED_LIB "Use pre compiled lib" OFF)
+if (USE_IMPORTED_LIB)
+    # add_library(math STATIC IMPORTED)
+    # set_property(TARGET math PROPERTY IMPORTED_LOCATION "./lib/libmath.a")
+    find_library(LIB_MATH_DEBUG mathd HINTS "./lib")
+    find_library(LIB_MATH_RELEASE math HINTS "./lib")
+    add_library(math STATIC IMPORTED GLOBAL)
+    set_target_properties(math PROPERTIES
+        IMPORTED_LOCATION "${LIB_MATH_RELEASE}"
+        IMPORTED_LOCATION_DEBUG "${LIB_MATH_DEBUG}"
+        IMPORTED_CONFIGURATIONS "RELEASE;DEBUG"
+    )
+else()
+    # Build math lib
+    add_subdirectory(src/c/math)
+endif()
 
 # Build demo executable
 add_executable(demo src/c/main.c)
-target_link_libraries(demo math)
+target_link_libraries(demo PRIVATE math)
 
 ##--------------------- Install and Package target -------------------------##
 # Install
-install(TARGETS math demo
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-file(GLOB_RECURSE MATH_LIB_HEADERS src/c/math/*.h)
-install(FILES ${MATH_LIB_HEADERS} DESTINATION include/math)
+if (NOT USE_IMPORTED_LIB)
+    install(TARGETS math demo
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib)
+    file(GLOB_RECURSE MATH_LIB_HEADERS src/c/math/*.h)
+    install(FILES ${MATH_LIB_HEADERS} DESTINATION include/math)
+endif()
 
 # Package
 include(CPack)
