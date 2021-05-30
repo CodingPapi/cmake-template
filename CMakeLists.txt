@@ -62,25 +62,6 @@ endif()
 add_executable(demo src/c/main.c)
 target_link_libraries(demo PRIVATE math)
 
-##--------------------- Install and Package target -------------------------##
-# Install
-if (NOT USE_IMPORTED_LIB)
-    install(TARGETS math demo
-            RUNTIME DESTINATION bin
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
-    file(GLOB_RECURSE MATH_LIB_HEADERS src/c/math/*.h)
-    install(FILES ${MATH_LIB_HEADERS} DESTINATION include/math)
-endif()
-
-# Package
-include(CPack)
-set(CPACK_GENERATOR "ZIP")
-set(CPACK_PACKAGE_NAME "CMakeTemplate")
-set(CPACK_SET_DESTDIR ON)
-set(CPACK_INSTALL_PREFIX "")
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-
 ##--------------------- Build unit tests -----------------------------------##
 option(CMAKE_TEMPLATE_ENABLE_TEST "Whether to enable unit tests" ON)
 if (CMAKE_TEMPLATE_ENABLE_TEST)
@@ -100,3 +81,21 @@ if (CMAKE_TEMPLATE_ENABLE_TEST)
     add_test(NAME test_minus COMMAND test_minus)
     add_test(NAME test_gtest_demo COMMAND test_gtest_demo)
 endif()
+
+##--------------------- Install and Package target -------------------------##
+# Install
+if (NOT USE_IMPORTED_LIB)
+    install(TARGETS math demo
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
+            PUBLIC_HEADER DESTINATION include)
+    file(GLOB_RECURSE MATH_LIB_HEADERS src/c/math/*.h)
+    install(FILES ${MATH_LIB_HEADERS} DESTINATION include/math)
+endif()
+
+# Package, These variables should set before including CPack module
+set(CPACK_GENERATOR "ZIP")
+set(CPACK_SET_DESTDIR ON)  # 支持指定安装目录
+set(CPACK_INSTALL_PREFIX "RealCoolEngineer")
+include(CPack)
