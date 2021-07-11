@@ -53,14 +53,35 @@ if (USE_IMPORTED_LIB)
         IMPORTED_LOCATION_DEBUG "${LIB_MATH_DEBUG}"
         IMPORTED_CONFIGURATIONS "RELEASE;DEBUG"
     )
+
+    add_subdirectory(src/c/nn)
 else()
     # Build math lib
     add_subdirectory(src/c/math)
+    add_subdirectory(src/c/nn)
 endif()
+
+# Merge library
+if (APPLE)
+    set(MERGE_CMD libtool -static -o)
+    add_custom_command(OUTPUT libmerge.a
+    COMMAND libtool -static -o libmerge.a $<TARGET_FILE:math> $<TARGET_FILE:nn>
+    DEPENDS math nn)
+else()
+    add_custom_command(OUTPUT libmerge.a
+    COMMAND ar crsT libmerge.a $<TARGET_FILE:math> $<TARGET_FILE:nn>
+    DEPENDS math nn)
+endif()
+
+add_custom_target(_merge ALL DEPENDS libmerge.a)
+add_library(merge STATIC IMPORTED GLOBAL)
+set_target_properties(merge PROPERTIES
+    IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/libmerge.a
+)
 
 # Build demo executable
 add_executable(demo src/c/main.c)
-target_link_libraries(demo PRIVATE math)
+target_link_libraries(demo PRIVATE merge)
 
 ##--------------------- Build unit tests -----------------------------------##
 option(CMAKE_TEMPLATE_ENABLE_TEST "Whether to enable unit tests" ON)
@@ -85,7 +106,7 @@ endif()
 ##--------------------- Install and Package target -------------------------##
 # Install
 if (NOT USE_IMPORTED_LIB)
-    install(TARGETS math demo
+    install(TARGETS math nn demo
             RUNTIME DESTINATION bin
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
