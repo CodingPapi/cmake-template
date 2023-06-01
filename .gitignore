@@ -1,5 +1,6 @@
 .vscode
 build/
+output/
 cmake-build
 .DS_Store
 src/c/cmake_template_version.h
